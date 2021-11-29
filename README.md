@@ -11,3 +11,14 @@ TCP 및 UDP를 이용하여 간단한 데이터 통신을 위한 서버/클라�
 
 빌드 의존성
  - apt-get install libssl-dev
+
+빌드 방법
+ - make htb_init : hash table header
+ - make server : tdtpd (server daemon)
+ - make client : tdtp_client (client program)
+ - make : htb_init + server + client
+ - make clean : clean
+
+기본 설정
+ - Port : 52625
+ - Directory : /tmp/tdtp (server daemon 동작시 자동 생성)
