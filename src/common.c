@@ -4,6 +4,7 @@
 #include <time.h> // time()
 #include <sys/types.h> // getpid()
 #include <unistd.h> // getpid()
+#include <arpa/inet.h> // inet_ntoa()
 #include "common.h"
 #include "hash_table.h"
 
@@ -128,7 +129,7 @@ int data_set(tdtp_data_t *data, char *payload, int len)
 		memcpy(data->data, payload, sizeof(data->data));
 
 	if(data_encrypt(data, len) , 0) return -1;
-	calc_sha256_data(data->data, sizeof(data), hash);
+	calc_sha256_data(data->data, sizeof(data->data), hash);
 	memcpy(data->data_hash, hash, sizeof(data->data_hash));
 	return 0;
 }
@@ -145,7 +146,7 @@ int data_hash_check(tdtp_data_t *data)
 		return -1;
 }
 
-int send_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, char *payload, int len)
+int send_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, char *payload, int len, int verbose_f)
 {
 	if(sock <= 0 || data == NULL) return -1;
 
@@ -163,6 +164,11 @@ int send_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, char *paylo
 			ret += SEND(sock, *data);
 		}
 
+		if(verbose_f) {
+			printf("Send ");
+			print_data(data, NULL);
+		}
+
 		if(payload == NULL)
 			break;
 		data->data_index += 1;
@@ -172,7 +178,7 @@ int send_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, char *paylo
 	return ret;
 }
 
-int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_type, int d_id)
+int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_type, int d_id, int verbose_f)
 {
 	if(sock <= 0 || data == NULL) return -1;
 
@@ -182,12 +188,19 @@ int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_typ
 
 	if(addr != NULL) { // UDP
 		socklen_t addr_size = sizeof(*addr);
-		ret += RECVFROM(sock, *data, addr, addr_size);
+		ret += RECVFROM(sock, *data, *addr, addr_size);
 	} else { // TCP
 		ret += RECV(sock, *data);
 	}
 
 	if(ret >= 0) {
+		if(verbose_f) {
+			printf("Receive ");
+			if(addr != NULL)
+				print_data(data, inet_ntoa(addr->sin_addr));
+			else
+				print_data(data, NULL);
+		}
 		if(d_id != 0) {
 			if(data->id != d_id) {
 				ERR_PRINT_F("%% Error : Data id mismatch\n");
@@ -244,7 +257,7 @@ int send_error(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int err, c
 	else
 		data->cmd_type = CMD_ERR_UNKNOWN;
 
-	return send_data(sock, addr, data, payload, len);
+	return send_data(sock, addr, data, payload, len, 0);
 }
 
 int disconnect(int sock, struct sockaddr_in *addr, tdtp_data_t *data)
@@ -252,5 +265,5 @@ int disconnect(int sock, struct sockaddr_in *addr, tdtp_data_t *data)
 	if(sock <= 0 || data == NULL) return -1;
 
 	data->cmd_type = CMD_DISCONNECT;
-	return send_data(sock, addr, data, NULL, 0);
+	return send_data(sock, addr, data, NULL, 0, 0);
 }

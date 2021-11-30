@@ -126,7 +126,7 @@ int print_recv_data_by_type(tdtp_data_t *recv_d, int cmd_type)
 	while(1) {
 		re_cnt = 0;
 		memset(recv_d, 0x00, sizeof(*recv_d));
-		while(recv_data(sock, addr_p, recv_d, cmd_type, d_id) == -1 && re_cnt <= RECV_MAX_CNT) {
+		while(recv_data(sock, addr_p, recv_d, cmd_type, d_id, verbose_f) == -1 && re_cnt <= RECV_MAX_CNT) {
 			re_cnt += 1;
 			if(re_cnt <= RECV_MAX_CNT)
 				printf("Retry... (%d/%d)\n", re_cnt, RECV_MAX_CNT);
@@ -166,13 +166,13 @@ int check_htb_id(int protocol)
 	d_id = send_d.id;
 
 	// Send data
-	if(send_data(sock, addr_p, &send_d, HTB_ID, strlen(HTB_ID)) < 0) {
+	if(send_data(sock, addr_p, &send_d, HTB_ID, strlen(HTB_ID), verbose_f) < 0) {
 		ERR_PRINT("Send error\n");
 		return -1;
 	}
 
 	// Receive data
-	if((ret = recv_data(sock, addr_p, &recv_d, 0, d_id)) < 0) {
+	if((ret = recv_data(sock, addr_p, &recv_d, 0, d_id, verbose_f)) < 0) {
 		if(ret == -1)
 			ERR_PRINT("Receive error\n");
 		else if(ret == -2) {
@@ -207,13 +207,13 @@ int proc_check_tdtp(char *data)
 	}
 	d_id = send_d.id;
 
-	send_data(sock, &server_addr, &send_d, NULL, 0);
+	send_data(sock, &server_addr, &send_d, NULL, 0, verbose_f);
 
 	do {
-		if((ret = recv_data(sock, &server_addr, &send_d, CMD_CHECK_TDTP, d_id)) >= 0) {
+		if((ret = recv_data(sock, &server_addr, &recv_d, CMD_CHECK_TDTP, d_id, verbose_f)) >= 0) {
 			re_cnt = 0;
 			count += 1;
-			printf("%d : %s (%s)\n", count, inet_ntoa(server_addr.sin_addr), strlen(recv_d.data) == 0 ? "Unknown" : recv_d.data);
+			printf("%d : %s (ver : %s)\n", count, inet_ntoa(server_addr.sin_addr), strlen(recv_d.data) == 0 ? "Unknown" : recv_d.data);
 		} else if (ret == -1) {
 			re_cnt += 1;
 		}
@@ -264,21 +264,22 @@ int proc_file_transfer(char *cmd)
 	d_id = send_d.id;
 
 	// Send command
-	send_data(sock, NULL, &send_d, cmd, strlen(cmd));
+	send_data(sock, NULL, &send_d, cmd, strlen(cmd), verbose_f);
 
 	// Main proccess
 	if(strcmp(opt, "get") == 0) {
 		// Get file (Server -> Client)
 		// Get file hash value
-		if(recv_data(sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id) < 0)
+		if(recv_data(sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, verbose_f) < 0)
 			return -1;
 		sscanf(recv_d.data, "%s", f_hash_a);
 
 		// Receive file
 		fp = fopen(s_path, "wb");
 		if(fp != NULL) {
-			while(recv_data(sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id) >= 0)
+			while(recv_data(sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, verbose_f) >= 0) {
 				fwrite(recv_d.data, 1, recv_d.len, fp);
+			}
 			fclose(fp);
 		} else {
 			ERR_PRINT("File open error(%s)\n", s_path);
@@ -313,7 +314,7 @@ int proc_file_transfer(char *cmd)
 			send_error(sock, NULL, &send_d, CMD_ERR_COMMON, "File not found");
 			return -1;
 		}
-		send_data(sock, NULL, &send_d, buf, 64);
+		send_data(sock, NULL, &send_d, buf, 64, verbose_f);
 
 		// Send file
 		fp = fopen(f_path, "rb");
@@ -321,7 +322,7 @@ int proc_file_transfer(char *cmd)
 			while(!feof(fp)) {
 				memset(buf, 0x00, sizeof(buf));
 				len = fread(buf, 1, sizeof(buf), fp);
-				send_data(sock, NULL, &send_d, buf, len);
+				send_data(sock, NULL, &send_d, buf, len, verbose_f);
 			}
 			fclose(fp);
 		} else {

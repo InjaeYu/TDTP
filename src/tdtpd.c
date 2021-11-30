@@ -115,10 +115,10 @@ int check_htb_id(int sock, tdtp_data_t *recv_d, struct sockaddr_in *addr)
 	header_sync(&send_d, recv_d);
 
 	if(strcmp(recv_d->data, HTB_ID) != 0) {
-		send_data(sock, addr, &send_d, "mismatch", strlen("mismatch"));
+		send_data(sock, addr, &send_d, "mismatch", strlen("mismatch"), 1);
 		ret = -1;
 	} else {
-		send_data(sock, addr, &send_d, NULL, 0);
+		send_data(sock, addr, &send_d, NULL, 0, 1);
 	}
 
 	return ret;
@@ -131,7 +131,7 @@ int proc_check_tdtp(struct sockaddr_in client_addr, tdtp_data_t recv_d, int d_id
 	memset(&send_d, 0x00, sizeof(send_d));
 
 	header_sync(&send_d, &recv_d);
-	send_data(sock_udp, &client_addr, &send_d, TDTP_VER, strlen(TDTP_VER));
+	send_data(sock_udp, &client_addr, &send_d, TDTP_VER, strlen(TDTP_VER), 1);
 
 	return 0;
 }
@@ -179,7 +179,7 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 			send_error(client_sock, NULL, &send_d, CMD_ERR_COMMON, "File not found");
 			return -1;
 		}
-		send_data(client_sock, NULL, &send_d, buf, 64);
+		send_data(client_sock, NULL, &send_d, buf, 64, 1);
 
 		// Send file
 		fp = fopen(f_path, "rb");
@@ -187,7 +187,7 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 			while(!feof(fp)) {
 				memset(buf, 0x00, sizeof(buf));
 				len = fread(buf, 1, sizeof(buf), fp);
-				send_data(client_sock, NULL, &send_d, buf, len);
+				send_data(client_sock, NULL, &send_d, buf, len, 1);
 			}
 			fclose(fp);
 		} else {
@@ -205,14 +205,14 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 		strcpy(s_path, buf);
 
 		// Get file hash value
-		if(recv_data(client_sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id) < 0)
+		if(recv_data(client_sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, 0) < 0)
 			return -1;
 		sscanf(recv_d.data, "%s", f_hash_a);
 
 		// Receive file
 		fp = fopen(s_path, "wb");
 		if(fp != NULL) {
-			while(recv_data(client_sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id) >= 0)
+			while(recv_data(client_sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, 0) >= 0)
 				fwrite(recv_d.data, 1, recv_d.len, fp);
 			fclose(fp);
 		} else {
@@ -268,7 +268,7 @@ void* udp_action_thread(void *arg)
 		return 0;
 	}
 
-	if(recv_data(sock_udp, &client_addr, &recv_d, 0, 0) < 0)
+	if(recv_data(sock_udp, &client_addr, &recv_d, 0, 0, 0) < 0)
 		return -1;
 #endif
 
@@ -310,8 +310,9 @@ void* tcp_action_thread(void *arg)
 	memcpy(&send_d, &((tcp_proc_arg_t *)arg)->send_d, sizeof(send_d));
 #endif
 
-	if(recv_data(client_sock, &client_addr, &recv_d, 0, 0) < 0)
+	if(recv_data(client_sock, NULL, &recv_d, 0, 0, 0) < 0)
 		return (void *)-1;
+	printf("Receive ");
 	print_data(&recv_d, inet_ntoa(client_addr.sin_addr));
 	d_id = recv_d.id;
 
@@ -322,7 +323,7 @@ void* tcp_action_thread(void *arg)
 		return 0;
 	}
 
-	if(recv_data(client_sock, &client_addr, &recv_d, 0, 0) < 0)
+	if(recv_data(client_sock, NULL, &recv_d, 0, 0, 0) < 0)
 		return -1;
 #endif
 
@@ -398,8 +399,9 @@ void* udp_server_thread(void *arg)
 		memset(&recv_d, 0x00, sizeof(recv_d));
 
 		// Wait request
-		if(recv_data(sock_udp, &client_addr, &recv_d, 0, 0) < 0)
+		if(recv_data(sock_udp, &client_addr, &recv_d, 0, 0, 0) < 0)
 			continue;
+		printf("Receive ");
 		print_data(&recv_d, inet_ntoa(client_addr.sin_addr));
 
 		// Action thread

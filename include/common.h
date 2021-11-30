@@ -77,8 +77,8 @@ void print_data(tdtp_data_t *data, char *ip_addr);
 int init_h_index(tdtp_data_t *data);
 int init_data(tdtp_data_t *data, unsigned int cmd_type);
 int data_set(tdtp_data_t *data, char *payload, int len);
-int send_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, char *payload, int len);
-int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_type, int d_id);
+int send_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, char *payload, int len, int verbose_f);
+int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_type, int d_id, int verbose_f);
 int send_error(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int err, char *payload);
 int disconnect(int sock, struct sockaddr_in *addr, tdtp_data_t *data);
 
