@@ -55,10 +55,10 @@ $(BIN_DIR)/$(HTB_CREATER): $(UTIL_DIR)/$(HTB_CREATER).c
 	@if [ ! -d $(BIN_DIR) ]; then mkdir -p $(BIN_DIR); fi
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$(HTB_CREATER) $<
 
-$(INC_DIR)/$(HTB_H): $(BIN_DIR)/$(HTB_CREATER)
+$(patsubst %.h,$(INC_DIR)/%.h,$(HTB_H)): $(BIN_DIR)/$(HTB_CREATER)
 	@cd $(INC_DIR); $(BIN_DIR)/$(HTB_CREATER)
 
-htb_init: $(INC_DIR)/$(HTB_H)
+htb_init: $(patsubst %.h,$(INC_DIR)/%.h,$(HTB_H))
 
 server: htb_init $(SERVER_OBJ) $(COMMON_OBJ)
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$(SERVER) $(SERVER_OBJ) $(COMMON_OBJ) $(LDFLAGS)
