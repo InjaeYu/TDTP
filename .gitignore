@@ -1,1 +1,5 @@
 *.swp
+bin/*
+obj/*
+include/hash_table.h
+include/htb_id.h

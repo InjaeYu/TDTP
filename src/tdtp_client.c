@@ -28,7 +28,7 @@ typedef struct _tdtp_list {
 } tdtp_list_t;
 
 static tdtp_list_t cmd_list[CMD_DISCONNECT - 1] = {
-	{CMD_CHECK_TDTP,    0, PROTO_UDP, "Check TDTP server", "-"},
+	{CMD_CHECK_TDTP,    0, PROTO_UDP, "Check TDTP server", ""},
 	{CMD_FILE_TRANSFER, 0, PROTO_TCP, "File transfer",     "<get | put> <File path> <Save path>"},
 };
 

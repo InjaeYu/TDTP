@@ -16,7 +16,7 @@ TCP 및 UDP를 이용하여 간단한 데이터 통신을 위한 서버/클라�
  - make htb_init : hash table header
  - make server : tdtpd (server daemon)
  - make client : tdtp_client (client program)
- - make : htb_init + server + client
+ - make all : htb_init + server + client
  - make clean : clean
 
 기본 설정
