@@ -41,36 +41,11 @@ int calc_sha256_file(char *path, char *output)
 	SHA256_Init(&c);
 	memset(hash, 0x00, sizeof(hash));
 
-#if 0
-	fseek(fp, 0, SEEK_END);
-	int max = ftell(fp), last_f = 0;
-	fseek(fp, 0, SEEK_SET);
-
-	while(max) {
-		if((len = fread(buf, 1, sizeof(buf), fp)) > 0) {
-			SHA256_Update(&c, buf, len);
-			memset(buf, 0x00, sizeof(buf));
-			max -= len;
-			if(max < sizeof(buf))	last_f = 1;
-		} else {
-			ERR_PRINT("File read error\n");
-			return -1;
-		}
-		if(last_f) {
-			if((len = fread(buf, 1, max, fp))) {
-				SHA256_Update(&c, buf, len);
-				memset(buf, 0x00, sizeof(buf));
-				break;
-			}
-		}
-	}
-#else
 	while(!feof(fp)) {
 		memset(buf, 0x00, sizeof(buf));
 		len = fread(buf, 1, sizeof(buf), fp);
 		SHA256_Update(&c, buf, len);
 	}
-#endif
 	fclose(fp);
 	SHA256_Final(hash, &c);
 	sha256_to_str(hash, output);

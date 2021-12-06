@@ -38,7 +38,7 @@ int data_encrypt(tdtp_data_t *data, int data_len)
 {
 	unsigned char *plain_data = (unsigned char *)malloc(sizeof(data->data));
 	if(plain_data == NULL) return -1;
-	int len = 0, enc_len = 0;
+	int len = data_len, enc_len = 0;
 	sec_key_t key;
 	memset(plain_data, 0x00, sizeof(data->data));
 
@@ -89,7 +89,7 @@ int init_h_index(tdtp_data_t *data) {
 	int i = 0;
 	srand(time(NULL) + getpid());
 	for(i=0; i<(sizeof(data->hash_index) / sizeof(data->hash_index[0])); i++)
-		data->hash_index[i] = ((rand() / (i + 1)) + getpid()) % HTB_SIZE;
+		data->hash_index[i] = ((rand() / (i + 1)) + getpid() + (rand() / (data->cmd_type * (data->data_index + 1)))) % HTB_SIZE;
 	return 0;
 }
 
@@ -209,12 +209,12 @@ int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_typ
 		}
 
 		if(data->cmd_type == CMD_DISCONNECT) {
-			printf("Recevie disconnect flag\n");
+			//printf("Receive disconnect flag\n");
 			return -2;
 		}
 
 		if(cmd_type != 0) {
-			if(data->cmd_type != cmd_type)
+			if(data->cmd_type != cmd_type && data->cmd_type < CMD_DISCONNECT)
 				return -2;
 		}
 

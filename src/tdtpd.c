@@ -250,16 +250,10 @@ void* udp_action_thread(void *arg)
 	struct sockaddr_in client_addr;
 	tdtp_data_t recv_d, send_d;
 
-#if 1
 	memcpy(&t_arg, arg, sizeof(t_arg));
 	memcpy(&client_addr, &t_arg.client_addr, sizeof(client_addr));
 	memcpy(&recv_d, &t_arg.recv_d, sizeof(recv_d));
 	memset(&send_d, 0x00, sizeof(send_d));
-#else
-	memcpy(&client_addr, &((udp_proc_arg_t *)arg)->client_addr, sizeof(client_addr));
-	memcpy(&recv_d, &((udp_proc_arg_t *)arg)->recv_d, sizeof(recv_d));
-	memcpy(&send_d, &((udp_proc_arg_t *)arg)->send_d, sizeof(send_d));
-#endif
 
 #if 0 /* 데이터가 평문이 아닌이상 hash table이 다른 경우, 복호화가 불가능하기에 의미 없음 */
 	// Check hash table id 
@@ -297,18 +291,11 @@ void* tcp_action_thread(void *arg)
 	struct sockaddr_in client_addr;
 	tdtp_data_t recv_d, send_d;
 
-#if 1
 	memcpy(&t_arg, arg, sizeof(t_arg));
 	client_sock = t_arg.client_sock;
 	memcpy(&client_addr, &t_arg.client_addr, sizeof(client_addr));
 	memset(&recv_d, 0x00, sizeof(recv_d));
 	memset(&send_d, 0x00, sizeof(send_d));
-#else
-	client_sock = ((tcp_proc_arg_t *)arg)->client_sock;
-	memcpy(&client_addr, &((tcp_proc_arg_t *)arg)->client_addr, sizeof(client_addr));
-	memcpy(&recv_d, &((tcp_proc_arg_t *)arg)->recv_d, sizeof(recv_d));
-	memcpy(&send_d, &((tcp_proc_arg_t *)arg)->send_d, sizeof(send_d));
-#endif
 
 	if(recv_data(client_sock, NULL, &recv_d, 0, 0, 0) < 0)
 		return (void *)-1;

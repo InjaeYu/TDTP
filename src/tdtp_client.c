@@ -339,16 +339,6 @@ int proc_file_transfer(char *cmd)
 
 int main(int argc, char *argv[])
 {
-#if 0
-	// Directory check
-	if(access(TDTP_DIR, 0) != 0) {
-		if(mkdir(TDTP_DIR, 0777) != 0) {
-			ERR_PRINT("fail create tdtp dir : %s\n", TDTP_DIR);
-			return -1;
-		}
-	}
-#endif
-
 	// Option check
 	int opt = 0, cmd_type = 0, proto = 0, port = 0, offset = 0;
 	char ip_addr[16];
