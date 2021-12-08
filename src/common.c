@@ -183,14 +183,26 @@ int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_typ
 	if(sock <= 0 || data == NULL) return -1;
 
 	int ret = 0;
+	char buf[sizeof(*data)];
+	socklen_t addr_size = sizeof(*addr);
 
+	memset(buf, 0x00, sizeof(buf));
 	memset(data, 0x00, sizeof(*data));
 
-	if(addr != NULL) { // UDP
-		socklen_t addr_size = sizeof(*addr);
-		ret += RECVFROM(sock, *data, *addr, addr_size);
-	} else { // TCP
-		ret += RECV(sock, *data);
+	while(ret < sizeof(*data)) {
+		if(addr != NULL) { // UDP
+			ret += recvfrom(sock, buf + ret, sizeof(buf) - ret, 0, (struct sockaddr*)&addr, &addr_size);
+		} else { // TCP
+			ret += recv(sock, buf + ret, sizeof(buf) - ret, 0);
+		}
+		if(ret == 0) /* read 0 byte or close connection */
+			return -2;
+	}
+	if(ret > sizeof(*data)) {
+		ERR_PRINT_F("%% Error : Read buffer overflow!\n");
+		return -2;
+	} else {
+		memcpy(data, buf, sizeof(*data));
 	}
 
 	if(ret >= 0) {
@@ -210,7 +222,7 @@ int recv_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, int cmd_typ
 
 		if(data->cmd_type == CMD_DISCONNECT) {
 			//printf("Receive disconnect flag\n");
-			return -2;
+			return 0;
 		}
 
 		if(cmd_type != 0) {

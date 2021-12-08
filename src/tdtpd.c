@@ -140,6 +140,7 @@ int proc_check_tdtp(struct sockaddr_in client_addr, tdtp_data_t recv_d, int d_id
 int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 {
 	tdtp_data_t send_d;
+	int ret = 0;
 	FILE *fp;
 	size_t len = 0;
 	char opt[4], f_hash_a[65], f_hash_b[65];
@@ -212,9 +213,14 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 		// Receive file
 		fp = fopen(s_path, "wb");
 		if(fp != NULL) {
-			while(recv_data(client_sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, 0) >= 0)
+			while((ret = recv_data(client_sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, 0)) > 0)
 				fwrite(recv_d.data, 1, recv_d.len, fp);
 			fclose(fp);
+			if(ret < 0) {
+				printf("ret : %d\n", ret);
+				unlink(s_path);
+				return -1;
+			}
 		} else {
 			ERR_PRINT("File open error(%s)\n", s_path);
 			return -1;
