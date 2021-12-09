@@ -9,6 +9,7 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <libgen.h> // basename()
 #include "common.h"
 
 #define TDTPD_NAME "tdtpd"
@@ -163,6 +164,36 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 		ERR_PRINT_F("%% Error : Invalid command option\n");
 		send_error(client_sock, NULL, &send_d, CMD_ERR_UNKNOWN_CMD, "Invalid command option");
 		return -1;
+	}
+
+	// Save path check
+	if(s_path[0] == '/' || (s_path[0] == '.' && s_path[1] == '.')) {
+		ERR_PRINT_F("%% Error : Cannot use \'/\' or \"..\" as the starting path\n");
+		send_error(client_sock, NULL, &send_d, CMD_ERR_COMMON, "Cannot use \'/\' or \"..\" as the starting path");
+		return -1;
+	}
+
+	// 저장경로가 '/'로 끝나는 경우, 기존 파일명을 사용
+	if(s_path[strlen(s_path) - 1] == '/') {
+		char *tmp_spath, *tmp_fpath;
+		tmp_spath = (char *)malloc(strlen(s_path) * sizeof(char));
+		tmp_fpath = (char *)malloc(strlen(f_path) * sizeof(char));
+		if(tmp_spath == NULL) {
+			ERR_PRINT("Memory allocation error\n");
+			send_error(client_sock, NULL, &send_d, CMD_ERR_UNKNOWN, "Memory allocation error");
+			return -1;
+		}
+		if(tmp_fpath == NULL) {
+			ERR_PRINT("Memory allocation error\n");
+			send_error(client_sock, NULL, &send_d, CMD_ERR_UNKNOWN, "Memory allocation error");
+			free(tmp_spath);
+			return -1;
+		}
+		strcpy(tmp_spath, s_path);
+		strcpy(tmp_fpath, f_path);
+		sprintf(s_path, "%s%s", tmp_spath, basename(tmp_fpath));
+		free(tmp_spath);
+		free(tmp_fpath);
 	}
 
 	// Main proccess
@@ -357,7 +388,7 @@ void* udp_server_thread(void *arg)
 
 	// Server socket varialbe
 	int on = 1;
-	tdtp_data_t recv_d;
+	tdtp_data_t recv_d, last_d;
 
 	// Create server socket
 	if((sock_udp = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -388,12 +419,29 @@ void* udp_server_thread(void *arg)
 		return (void *)-1;
 	}
 
+	memset(&last_d, 0x00, sizeof(last_d));
 	while(1) {
 		memset(&recv_d, 0x00, sizeof(recv_d));
 
 		// Wait request
 		if(recv_data(sock_udp, &client_addr, &recv_d, 0, 0, 0) < 0)
 			continue;
+
+		/* Duplicate data check
+		   - UDP 통신은 흐름제어가 없기에 목적지까지 도달 가능한 모든 경로에 데이터 전송
+		   - 위 특징으로 인하여 경로가 여러개인 경우 중복된 데이터를 받는 경우 발생
+		   - 따라서 최근 받은 데이터와 중복되는 데이터를 받는 경우 드랍
+		*/
+		if(last_d.id == 0) {
+			memcpy(&last_d, &recv_d, sizeof(last_d));
+		} else {
+			if(memcmp(&last_d, &recv_d, sizeof(last_d)) == 0) {
+				printf("Duplicate packet detected, dropped\n");
+				continue;
+			} else {
+				memcpy(&last_d, &recv_d, sizeof(last_d));
+			}
+		}
 		printf("Receive ");
 		print_data(&recv_d, inet_ntoa(client_addr.sin_addr));
 
