@@ -277,7 +277,7 @@ int proc_file_transfer(char *cmd)
 		// Receive file
 		fp = fopen(s_path, "wb");
 		if(fp != NULL) {
-			while(recv_data(sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, verbose_f) >= 0) {
+			while(recv_data(sock, NULL, &recv_d, CMD_FILE_TRANSFER, d_id, verbose_f) > 0) {
 				fwrite(recv_d.data, 1, recv_d.len, fp);
 			}
 			fclose(fp);
@@ -321,7 +321,7 @@ int proc_file_transfer(char *cmd)
 		if(fp != NULL) {
 			while(!feof(fp)) {
 				memset(buf, 0x00, sizeof(buf));
-				len = fread(buf, 1, sizeof(buf), fp);
+				len = fread(buf, 1, sizeof(send_d.data), fp);
 				send_data(sock, NULL, &send_d, buf, len, verbose_f);
 			}
 			fclose(fp);

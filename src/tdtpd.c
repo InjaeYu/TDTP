@@ -166,36 +166,6 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 		return -1;
 	}
 
-	// Save path check
-	if(s_path[0] == '/' || (s_path[0] == '.' && s_path[1] == '.')) {
-		ERR_PRINT_F("%% Error : Cannot use \'/\' or \"..\" as the starting path\n");
-		send_error(client_sock, NULL, &send_d, CMD_ERR_COMMON, "Cannot use \'/\' or \"..\" as the starting path");
-		return -1;
-	}
-
-	// 저장경로가 '/'로 끝나는 경우, 기존 파일명을 사용
-	if(s_path[strlen(s_path) - 1] == '/') {
-		char *tmp_spath, *tmp_fpath;
-		tmp_spath = (char *)malloc(strlen(s_path) * sizeof(char));
-		tmp_fpath = (char *)malloc(strlen(f_path) * sizeof(char));
-		if(tmp_spath == NULL) {
-			ERR_PRINT("Memory allocation error\n");
-			send_error(client_sock, NULL, &send_d, CMD_ERR_UNKNOWN, "Memory allocation error");
-			return -1;
-		}
-		if(tmp_fpath == NULL) {
-			ERR_PRINT("Memory allocation error\n");
-			send_error(client_sock, NULL, &send_d, CMD_ERR_UNKNOWN, "Memory allocation error");
-			free(tmp_spath);
-			return -1;
-		}
-		strcpy(tmp_spath, s_path);
-		strcpy(tmp_fpath, f_path);
-		sprintf(s_path, "%s%s", tmp_spath, basename(tmp_fpath));
-		free(tmp_spath);
-		free(tmp_fpath);
-	}
-
 	// Main proccess
 	if(strcmp(opt, "get") == 0) {
 		// Put file (Server -> Client)
@@ -218,7 +188,7 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 		if(fp != NULL) {
 			while(!feof(fp)) {
 				memset(buf, 0x00, sizeof(buf));
-				len = fread(buf, 1, sizeof(buf), fp);
+				len = fread(buf, 1, sizeof(send_d.data), fp);
 				send_data(client_sock, NULL, &send_d, buf, len, 1);
 			}
 			fclose(fp);
@@ -231,6 +201,37 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 		disconnect(client_sock, NULL, &send_d);
 	} else {
 		// Get file (Client -> Server)
+
+		// Save path check
+		if(s_path[0] == '/' || (s_path[0] == '.' && s_path[1] == '.')) {
+			ERR_PRINT_F("%% Error : Cannot use \'/\' or \"..\" as the starting path\n");
+			send_error(client_sock, NULL, &send_d, CMD_ERR_COMMON, "Cannot use \'/\' or \"..\" as the starting path");
+			return -1;
+		}
+
+		// 저장경로가 '/'로 끝나는 경우, 기존 파일명을 사용
+		if(s_path[strlen(s_path) - 1] == '/') {
+			char *tmp_spath, *tmp_fpath;
+			tmp_spath = (char *)malloc(strlen(s_path) * sizeof(char));
+			tmp_fpath = (char *)malloc(strlen(f_path) * sizeof(char));
+			if(tmp_spath == NULL) {
+				ERR_PRINT("Memory allocation error\n");
+				send_error(client_sock, NULL, &send_d, CMD_ERR_UNKNOWN, "Memory allocation error");
+				return -1;
+			}
+			if(tmp_fpath == NULL) {
+				ERR_PRINT("Memory allocation error\n");
+				send_error(client_sock, NULL, &send_d, CMD_ERR_UNKNOWN, "Memory allocation error");
+				free(tmp_spath);
+				return -1;
+			}
+			strcpy(tmp_spath, s_path);
+			strcpy(tmp_fpath, f_path);
+			sprintf(s_path, "%s%s", tmp_spath, basename(tmp_fpath));
+			free(tmp_spath);
+			free(tmp_fpath);
+		}
+
 		memset(buf, 0x00, sizeof(buf));
 		sprintf(buf, "%s/%s", TDTP_DIR, s_path);
 		memset(s_path, 0x00, sizeof(s_path));
