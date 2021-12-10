@@ -188,7 +188,7 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 		if(fp != NULL) {
 			while(!feof(fp)) {
 				memset(buf, 0x00, sizeof(buf));
-				len = fread(buf, 1, sizeof(send_d.data), fp);
+				len = fread(buf, 1, sizeof(buf), fp);
 				send_data(client_sock, NULL, &send_d, buf, len, 1);
 			}
 			fclose(fp);

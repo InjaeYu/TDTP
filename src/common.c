@@ -171,8 +171,10 @@ int send_data(int sock, struct sockaddr_in *addr, tdtp_data_t *data, char *paylo
 
 		if(payload == NULL)
 			break;
+
 		data->data_index += 1;
 		len -= d_size;
+		payload += d_size;
 	}
 
 	return ret;
