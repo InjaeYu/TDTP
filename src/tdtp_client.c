@@ -255,6 +255,14 @@ int proc_file_transfer(char *cmd)
 		return -1;
 	}
 
+	// put인 경우에 한하여 저장경로 확인
+	if(strcmp(opt, "put") == 0) {
+		if(s_path[0] == '/' || (s_path[0] == '.' && s_path[1] == '.')) {
+			ERR_PRINT_F("%% Error : Save path cannot start with \'/\' or \"..\" in the put option\n");
+			return -1;
+		}
+	}
+
 	// Init data
 	if(init_data(&send_d, CMD_FILE_TRANSFER) < 0) {
 		ERR_PRINT_F("%% Error : Data init error\n");

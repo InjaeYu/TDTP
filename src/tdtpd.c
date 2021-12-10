@@ -204,8 +204,8 @@ int proc_file_transfer(int client_sock, tdtp_data_t recv_d, int d_id)
 
 		// Save path check
 		if(s_path[0] == '/' || (s_path[0] == '.' && s_path[1] == '.')) {
-			ERR_PRINT_F("%% Error : Cannot use \'/\' or \"..\" as the starting path\n");
-			send_error(client_sock, NULL, &send_d, CMD_ERR_COMMON, "Cannot use \'/\' or \"..\" as the starting path");
+			ERR_PRINT_F("%% Error : Save path cannot start with \'/\' or \"..\"\n");
+			send_error(client_sock, NULL, &send_d, CMD_ERR_COMMON, "Save path cannot start with \'/\' or \"..\"");
 			return -1;
 		}
 
